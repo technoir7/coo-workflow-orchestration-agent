@@ -3,9 +3,64 @@
 > **Status**: Pre-Alpha / Scaffolding Phase
 > **Version**: 0.1.0
 
-The **COO Workflow Orchestration Agent (CWA)** is a bounded, semi-autonomous "control tower" designed to orchestrate operations workflows with deterministic precision. Unlike generic "AI Agents" that hallucinate actions, CWA operates on strict architectural invariants, ensuring that every action is audited, policy-driven, and subject to human approval when necessary.
+The **COO Workflow Orchestration Agent (CWA)** is a bounded, semi-autonomous "control tower" designed to orchestrate complex operations workflows with deterministic precision. Unlike generic "AI Agents" that rely on probabilistic reasoning for critical actions, CWA operates on strict architectural invariants, ensuring that every action is audited, policy-driven, and subject to human approval when necessary.
 
-It serves as a central nervous system for operations, ingesting tasks from disparates sources (Linear, Slack, Email), normalizing them into a unified `WorkItem` schema, and executing policy-based workflows to drive them to completion.
+It serves as a central nervous system for operations teams, ingesting tasks from disparate sources (Linear, Slack, Email), normalizing them into a unified `WorkItem` schema, and executing policy-based workflows to drive them to completion.
+
+---
+
+## 🎯 Functionality: How It Works
+
+CWA is designed to automate the repetitive, high-stakes coordination work that bogs down COO and Operations teams. It follows a strict "Observe-Orient-Decide-Act" loop:
+
+1.  **Ingest & Normalize**: The agent listens to various inputs (Linear tickets, Slack messages, Emails) and converts them into a standardized `WorkItem`. This creates a single source of truth for all operational tasks.
+2.  **Evaluate Policies**: A deterministic policy engine checks every `WorkItem` against defined rules (e.g., "If a P1 ticket hasn't been updated in 4 hours, trigger an escalation").
+3.  **Propose Action Drafts**: When a policy is triggered, the agent *proposes* an action (an `ActionDraft`). It does **not** act immediately.
+4.  **Enforce Approval Gates**: Depending on the criticality of the action, it may require human approval.
+5.  **Execute & Audit**: Once approved (or if auto-approval is safe), the agent executes the side-effect (e.g., sending a Slack ping) and logs an immutable `AuditLog`.
+
+---
+
+## ✨ Key Features
+
+### 🛡️ Deterministic Policy Engine
+The core of CWA is **logic, not vibes**. Policies are defined in code/configuration, not natural language prompts.
+*   **Precise Triggers**: Rules are evaluated mathematically (e.g., `days_since_update > 3`).
+*   **No Hallucinations**: Decisions are made by explicit logic branches, ensuring consistent behavior every time.
+
+### 🔄 Supported Workflows
+CWA comes with pre-built state machines for common operations scenarios:
+*   **Stall Detection & Nudging**: Automatically identifies work items that haven't moved and drafts polite "nudge" messages to owners.
+*   **SLA Monitoring**: Tracks deadlines and proactively escalates "at-risk" items before they breach SLA.
+*   **Weekly Reporting**: Aggregates completed work and blockers into a draft status report for leadership review.
+*   **Meeting Task Extraction**: Parses meeting notes to extract action items, validates them, and creates proper tickets.
+
+### 🔒 Bounded Autonomy
+The agent operates within strict "bounds" defined by state machines.
+*   **Explicit States**: A workflow can only move between valid states (e.g., `DRAFTING` -> `AWAITING_APPROVAL` -> `SENT`).
+*   **Impossible Transitions**: A "Pending" item cannot jump to "Resolved" without passing through the necessary checks.
+
+### 👤 Human-in-the-Loop by Design
+*   **Action Drafts**: The agent proposes actions for you to review. You are the editor; the agent is the drafter.
+*   **Granular Permissions**: Configure which actions require explicit approval and which can run autonomously.
+
+---
+
+## 🚀 Benefits
+
+### Why use CWA over a generic AI Agent?
+
+| Feature | Generic "AI Agent" | COO Workflow Agent (CWA) |
+| :--- | :--- | :--- |
+| **Decision Logic** | Probabilistic (LLM decides) | **Deterministic (Policy Engine)** |
+| **Reliability** | Prone to hallucinations | **100% Predictable Behavior** |
+| **Security** | Risk of prompt injection | **Bounded State Machines** |
+| **Audit Trail** | Opaque "reasoning" | **Immutable Audit Logs** |
+| **Role** | "Magic Box" | **Force Multiplier** |
+
+*   **Trust & Safety**: You can trust CWA with sensitive operations because it *cannot* do anything outside its programmed policies.
+*   **Scalability**: Handle 100x more volume without adding headcount. The agent handles the tracking, reminding, and reporting, freeing humans to solve the actual problems.
+*   **Ops Excellence**: Enforce standard operating procedures (SOPs) automatically. If it's policy, it happens—every time.
 
 ---
 
@@ -21,7 +76,7 @@ CWA is built on a **Policy-Driven, Event-Sourced** architecture. It separates th
     *   **Invariant**: Source of Truth. The Agent never "invents" work; it only reflects the state of external systems.
 
 2.  **Policy Engine** (`app/policies/`):
-    *   Deterministic rule evaluation (e.g., `IF status == 'Stalled' AND days_since_update > 3 THEN triggers 'Nudge'`).
+    *   Deterministic rule evaluation.
     *   Evaluates `WorkItems` against active `Policies` to propose `ActionDrafts`.
 
 3.  **Execution Layer** (`app/workflows/`):
