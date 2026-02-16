@@ -1,1 +1,141 @@
-# coo-workflow-orchestration-agent
+# COO Workflow Orchestration Agent (CWA)
+
+> **Status**: Pre-Alpha / Scaffolding Phase
+> **Version**: 0.1.0
+
+The **COO Workflow Orchestration Agent (CWA)** is a bounded, semi-autonomous "control tower" designed to orchestrate operations workflows with deterministic precision. Unlike generic "AI Agents" that hallucinate actions, CWA operates on strict architectural invariants, ensuring that every action is audited, policy-driven, and subject to human approval when necessary.
+
+It serves as a central nervous system for operations, ingesting tasks from disparates sources (Linear, Slack, Email), normalizing them into a unified `WorkItem` schema, and executing policy-based workflows to drive them to completion.
+
+---
+
+## 🏗 System Architecture
+
+CWA is built on a **Policy-Driven, Event-Sourced** architecture. It separates the *decision* to act from the *execution* of the action, with a strict audit trail in between.
+
+### Core Components
+
+1.  **Ingestion Layer**:
+    *   Connectors for Linear, Slack, and other external systems.
+    *   Normalizes incoming data into a canonical `WorkItem`.
+    *   **Invariant**: Source of Truth. The Agent never "invents" work; it only reflects the state of external systems.
+
+2.  **Policy Engine** (`app/policies/`):
+    *   Deterministic rule evaluation (e.g., `IF status == 'Stalled' AND days_since_update > 3 THEN triggers 'Nudge'`).
+    *   Evaluates `WorkItems` against active `Policies` to propose `ActionDrafts`.
+
+3.  **Execution Layer** (`app/workflows/`):
+    *   **Action Drafts**: Proposed actions (e.g., "Send Slack Message") that wait for approval.
+    *   **Action Execution**: The actual side-effect (API call), performed only after approval logic is satisfied.
+
+4.  **Intelligence Layer** (`app/llm/`):
+    *   Uses LLMs (Gemini) for *content generation* (drafting messages, extracting tasks from meeting notes) but **never** for *control flow decisions*.
+    *   Result: High-quality text output with zero risk of "rogue" agent behavior.
+
+### Architectural Invariants
+
+The system is rigorously tested against these non-negotiable constraints (see `tests/test_invariants.py`):
+*   **Idempotency**: Retrying a workflow step **never** results in duplicate side-effects (e.g., sending the same Slack message twice).
+*   **Auditability**: Every `ActionExecution` must have a linked `AuditLog` trace.
+*   **Approval Gates**: High-stakes actions (like Escalations) **cannot** execute without an `APPROVED` `ActionDraft`.
+
+---
+
+## 📦 Data Models
+
+Key entities in the system:
+
+*   **`Organization`**: Supports multi-tenancy.
+*   **`User`**: System users with granular roles (Admin, Approver, Viewer).
+*   **`WorkItem`**: The atomic unit of work. Contains normalized metadata (`status`, `priority`, `due_date`) and raw source data.
+*   **`Policy`**: Configuration for automation rules (`trigger_event`, `rules`, `actions`).
+*   **`AuditLog`**: Immutable record of system activities.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+*   Python 3.10+
+*   PostgreSQL 14+
+*   Docker & Docker Compose (optional, for infra)
+
+### Installation
+
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/your-org/coo-workflow-agent.git
+    cd coo-workflow-agent
+    ```
+
+2.  **Set up the environment**:
+    Create a `.env` file based on the configuration requirements (see `app/config.py`).
+    ```bash
+    cp .env.example .env
+    # Edit .env with your DATABASE_URL, OPENAI_API_KEY, etc.
+    ```
+
+3.  **Install dependencies**:
+    *Note: `requirements.txt` or `pyproject.toml` is currently pending. Please install standard FastAPI/SQLAlchemy deps manually if needed.*
+    ```bash
+    pip install fastapi uvicorn sqlalchemy pydantic psycopg2-binary
+    ```
+
+4.  **Run Migrations**:
+    ```bash
+    alembic upgrade head
+    ```
+
+### Running the Application
+
+Start the development server:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+The API will be available at `http://127.0.0.1:8000`.
+Interactive API docs: `http://127.0.0.1:8000/docs`.
+
+---
+
+## 🧪 Development
+
+### Directory Structure
+
+```text
+app/
+├── api/            # REST API endpoints (FastAPI routers)
+├── models/         # SQLAlchemy ORM models
+├── schemas/        # Pydantic data schemas (Request/Response)
+├── policies/       # Deterministic policy logic
+├── workflows/      # State machines and execution logic
+├── connectors/     # Integrations (Linear, Slack)
+├── llm/            # LLM interface and prompts
+└── main.py         # Application entrypoint
+
+tests/
+├── test_invariants.py  # Architectural constraint verification
+```
+
+### Running Tests
+
+Run the implementation and invariant tests:
+
+```bash
+pytest
+```
+
+---
+
+## 🤝 Contributing
+
+1.  Fork the repository.
+2.  Create a feature branch.
+3.  Ensure `pytest` passes (especially `test_invariants.py`).
+4.  Submit a Pull Request.
+
+---
+
+*Generated by Antigravity*
